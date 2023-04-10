@@ -1,6 +1,6 @@
 
 # About
-`dynamic-dns-update` is a utility to be run locally that will update both a Route53 A record (Dynamic DNS) and your main AWS NACL for your VPC when your local DNS changes.
+`Dynamic DNS Updater` is a utility to be run locally that will update both a Route53 A record (Dynamic DNS) and your main AWS NACL for your VPC when your local DNS changes. The intention is to alter your AWS environments so that they are accessable only to your local home network under the assumption that you are dynamically assigned an IP from your ISP.  This application is intended to work for IPv4 only.
 
 # Required Environment Variables
 
