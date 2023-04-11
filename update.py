@@ -1,7 +1,6 @@
 
 import os, sys, logging
 from os import environ
-import dns
 import dns.resolver
 from datetime import datetime
 import time
