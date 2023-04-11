@@ -34,6 +34,7 @@ def checkAndLoadEnvironmentVariables():
         sys.exit(f'Failed to start application because {diff} environment variables are not set')
         
 def updateRoute53(ip_address):
+    logger.info("Starting update of Route53 A record for {}".format(os.environ['DDNSU_ROUTE53_HOST_NAME']))
     client = boto3.client('route53')
     response = client.change_resource_record_sets(
         ChangeBatch={
@@ -56,9 +57,27 @@ def updateRoute53(ip_address):
         },
     HostedZoneId='Z1FNLVW1LDGPGV',
     )
-
+    logger.info("Route 53 Record updated successfully")
 def updateNACL(ip_address):
     pass
+    """ response = client.replace_network_acl_entry(
+        CidrBlock='string',
+        DryRun=True|False,
+        Egress=True|False,
+        IcmpTypeCode={
+            'Code': 123,
+            'Type': 123
+        },
+        Ipv6CidrBlock='string',
+        NetworkAclId='string',
+        PortRange={
+            'From': 123,
+            'To': 123
+        },
+        Protocol='string',
+        RuleAction='allow'|'deny',
+        RuleNumber=123
+    ) """
 
 def getLocalIPAddress():
     logger.info("Getting IP Address")
