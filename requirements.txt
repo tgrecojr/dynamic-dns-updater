@@ -1,3 +1,2 @@
 dnspython
-environs
 boto3
