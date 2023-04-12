@@ -24,6 +24,7 @@ REQUIRED_ENV_VARS = {
     "AWS_ACCESS_KEY_ID",
     "AWS_SECRET_ACCESS_KEY",
     "AWS_DEFAULT_REGION",
+    "DDNSU_NACL_ID",
 }
 
 def checkAndLoadEnvironmentVariables():
@@ -57,26 +58,19 @@ def updateRoute53(ip_address):
     HostedZoneId='Z1FNLVW1LDGPGV',
     )
     logger.info("Route 53 Record updated successfully")
+
 def updateNACL(ip_address):
-    pass
-    """ response = client.replace_network_acl_entry(
-        CidrBlock='string',
-        DryRun=True|False,
-        Egress=True|False,
-        IcmpTypeCode={
-            'Code': 123,
-            'Type': 123
-        },
-        Ipv6CidrBlock='string',
-        NetworkAclId='string',
-        PortRange={
-            'From': 123,
-            'To': 123
-        },
-        Protocol='string',
-        RuleAction='allow'|'deny',
-        RuleNumber=123
-    ) """
+    logger.info("Starting update of Inbound and Outbound NACL: {}".format(os.environ['DDNSU_NACL_ID']))
+    vpc_client = boto3.client("ec2")
+    cidr_block = "{}/32".format(ip_address)
+    response = vpc_client.replace_network_acl_entry(CidrBlock=cidr_block,
+                                                        Egress=False,
+                                                        NetworkAclId=os.environ['DDNSU_NACL_ID'],
+                                                        Protocol="-1",
+                                                        RuleAction="allow",
+                                                        RuleNumber=os.environ.get('DDNSU_NACL_RULE_ID',100))
+    
+    logger.info("NACL updated successfully")
 
 def getLocalIPAddress():
     logger.info("Getting IP Address")
