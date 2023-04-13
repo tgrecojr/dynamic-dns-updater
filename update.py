@@ -24,7 +24,6 @@ REQUIRED_ENV_VARS = {
     "AWS_ACCESS_KEY_ID",
     "AWS_SECRET_ACCESS_KEY",
     "AWS_DEFAULT_REGION",
-    "DDNSU_NACL_ID",
 }
 
 def checkAndLoadEnvironmentVariables():
@@ -60,18 +59,20 @@ def updateRoute53(ip_address):
     logger.info("Route 53 Record updated successfully")
 
 def updateNACL(ip_address):
-    logger.info("Starting update of Inbound and Outbound NACL: {}".format(os.environ['DDNSU_NACL_ID']))
-    vpc_client = boto3.client("ec2")
-    cidr_block = "{}/32".format(ip_address)
-    response = vpc_client.replace_network_acl_entry(CidrBlock=cidr_block,
-                                                        Egress=False,
-                                                        NetworkAclId=os.environ['DDNSU_NACL_ID'],
-                                                        Protocol="-1",
-                                                        RuleAction="allow",
-                                                        RuleNumber=os.environ.get('DDNSU_NACL_RULE_ID',100))
-    
-    logger.info("NACL updated successfully")
-
+    if os.environ.get('DDNSU_NACL_ID') is not None:
+        logger.info("Starting update of Inbound and Outbound NACL: {}".format(os.environ['DDNSU_NACL_ID']))
+        vpc_client = boto3.client("ec2")
+        cidr_block = "{}/32".format(ip_address)
+        response = vpc_client.replace_network_acl_entry(CidrBlock=cidr_block,
+                                                            Egress=False,
+                                                            NetworkAclId=os.environ['DDNSU_NACL_ID'],
+                                                            Protocol="-1",
+                                                            RuleAction="allow",
+                                                            RuleNumber=os.environ.get('DDNSU_NACL_RULE_ID',100))
+        
+        logger.info("NACL updated successfully")
+    else:
+        logger.info("NACL is not set.  Not updating VPC")
 def getLocalIPAddress():
     logger.info("Getting IP Address")
     resolver = dns.resolver.Resolver(configure=False)
