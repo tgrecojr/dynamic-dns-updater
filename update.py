@@ -6,6 +6,7 @@ from datetime import datetime
 import time
 import boto3
 from botocore.config import Config
+from botocore.exceptions import ClientError
 
 PREVIOUS_ADDRESS = None
 
@@ -58,21 +59,29 @@ def updateRoute53(ip_address):
     )
     logger.info("Route 53 Record updated successfully")
 
-def updateNACL(ip_address):
-    if os.environ.get('DDNSU_NACL_ID') is not None:
-        logger.info("Starting update of Inbound and Outbound NACL: {}".format(os.environ['DDNSU_NACL_ID']))
-        vpc_client = boto3.client("ec2")
-        cidr_block = "{}/32".format(ip_address)
-        response = vpc_client.replace_network_acl_entry(CidrBlock=cidr_block,
-                                                            Egress=False,
-                                                            NetworkAclId=os.environ['DDNSU_NACL_ID'],
-                                                            Protocol="-1",
-                                                            RuleAction="allow",
-                                                            RuleNumber=os.environ.get('DDNSU_NACL_RULE_ID',100))
-        
-        logger.info("NACL updated successfully")
-    else:
-        logger.info("NACL is not set.  Not updating VPC")
+def updateSG(ip_address):
+    try:
+        if os.environ.get('DDNSU_SG_ID') is not None:
+            logger.info("Starting update of Inbound Security GroupL: {}".format(os.environ['DDNSU_SG_ID']))
+            vpc_client = boto3.client("ec2")
+            cidr_block = "{}/32".format(ip_address)
+            response = vpc_client.authorize_security_group_ingress(
+                GroupId=os.environ['DDNSU_SG_ID'],
+                IpPermissions=[
+                    {'IpProtocol': 'tcp',
+                    'FromPort': 443,
+                    'ToPort': 443,
+                    'IpRanges': [{'CidrIp': cidr_block}]}
+                ])
+            
+            logger.info("SG updated successfully")
+        else:
+            logger.info("SG is not set.  Not updating VPC Security Groups")
+    except ClientError as e:
+        if  "already exists" in str(e):
+            logger.info("Security Group rule already exists")
+        else:
+            logger.error(e)
 def getLocalIPAddress():
     logger.info("Getting IP Address")
     resolver = dns.resolver.Resolver(configure=False)
@@ -93,7 +102,7 @@ def main():
         if myip !=  PREVIOUS_ADDRESS:
             logger.info("IP Address has changed.  Performing update operations.")
             updateRoute53(myip)
-            updateNACL(myip)
+            updateSG(myip)
             #Only update the IP Address if we receive no errors. This ensures everything is always up to date
             PREVIOUS_ADDRESS = myip
         else:
