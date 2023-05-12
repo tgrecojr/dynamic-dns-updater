@@ -7,6 +7,7 @@ import time
 import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
+import json
 
 PREVIOUS_ADDRESS = None
 
@@ -60,21 +61,29 @@ def updateRoute53(ip_address):
     logger.info("Route 53 Record updated successfully")
 
 def updateSG(ip_address):
+    
     try:
-        if os.environ.get('DDNSU_SG_ID') is not None:
-            logger.info("Starting update of Inbound Security GroupL: {}".format(os.environ['DDNSU_SG_ID']))
-            vpc_client = boto3.client("ec2")
-            cidr_block = "{}/32".format(ip_address)
-            response = vpc_client.authorize_security_group_ingress(
-                GroupId=os.environ['DDNSU_SG_ID'],
-                IpPermissions=[
-                    {'IpProtocol': 'tcp',
-                    'FromPort': 443,
-                    'ToPort': 443,
-                    'IpRanges': [{'CidrIp': cidr_block}]}
-                ])
-            
-            logger.info("SG updated successfully")
+        if os.environ.get('DDNSU_SG_INFO') is not None:
+            logger.info("Starting update of Inbound Security Groups: {}".format(os.environ['DDNSU_SG_INFO']))
+            groups = json.loads(os.environ['DDNSU_SG_INFO'])
+            for group in groups:
+                vpc_client = boto3.client("ec2")
+                cidr_block = "{}/32".format(ip_address)
+                try:
+                    response = vpc_client.authorize_security_group_ingress(
+                    GroupId=group["sg"],
+                    IpPermissions=[
+                        {'IpProtocol': 'tcp',
+                        'FromPort': group["to"],
+                        'ToPort': group["from"],
+                        'IpRanges': [{'CidrIp': cidr_block}]}
+                    ])
+                except ClientError as e:
+                    if  "already exists" in str(e):
+                        logger.info("Security Group rule already exists")
+                    else:
+                        logger.error(e)
+                logger.info("SG {} updated successfully".format(group))
         else:
             logger.info("SG is not set.  Not updating VPC Security Groups")
     except ClientError as e:
