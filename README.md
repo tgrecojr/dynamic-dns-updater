@@ -17,6 +17,13 @@ The Following environment variables are used in this application.  All environme
 | AWS_SECRET_ACCESS_KEY               |   AWS Secret Access Key              | N/A |
 | AWS_DEFAULT_REGION                  |   AWS Default Region                 | N/A |
 | DDNSU_NACL_ID                       |   AWS NACL ID (from VPC)             | N/A |
+| DDNSU_SG_INFO                       |   JSON String of SG Details          | N/A |
+
+# DDNSU_SG_INFO Details
+
+Multiple Security groups can be updated at the same time using the following format:
+
+[{"sg": "sgid","to": 443,"from": 443}, {"sg": "sgid2","to": 3306,"from": 3306}]
 
 
 
